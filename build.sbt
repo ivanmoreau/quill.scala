@@ -368,8 +368,9 @@ lazy val `quill-finagle-postgres` =
     .settings(mimaSettings: _*)
     .settings(
       fork in Test := true,
+      resolvers += "jitpack" at "https://jitpack.io",
       libraryDependencies ++= Seq(
-        "io.github.finagle" %% "finagle-postgres" % "0.12.0"
+        "com.github.deal-engine.finagle-postgres" %% "finagle-postgres" % "096742b506"
       )
     )
     .dependsOn(`quill-sql-jvm` % "compile->compile;test->test")
@@ -676,7 +677,7 @@ lazy val basicSettings = Seq(
     }
   },
   organization := "io.getquill",
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.13.2",
   crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6",

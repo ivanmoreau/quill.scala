@@ -15,7 +15,7 @@ lazy val baseModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
   `quill-core-portable-jvm`, `quill-core-portable-js`,
   `quill-core-jvm`, `quill-core-js`,
   `quill-sql-portable-jvm`, `quill-sql-portable-js`,
-  `quill-sql-jvm`, `quill-sql-js`, `quill-monix`
+  `quill-sql-jvm`, `quill-sql-js`, `quill-monix`, `quill-cats`
 )
 
 lazy val dbModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
@@ -23,7 +23,7 @@ lazy val dbModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
 )
 
 lazy val jasyncModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
-  `quill-jasync`, `quill-jasync-postgres`, `quill-jasync-mysql`
+  `quill-jasync`, `quill-jasync-postgres`, `quill-jasync-mysql`, `quill-jasync-cats`, `quill-jasync-cats-postgres`
 )
 
 lazy val asyncModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
@@ -37,7 +37,6 @@ lazy val codegenModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
 )
 
 lazy val bigdataModules = Seq[sbt.ClasspathDep[sbt.ProjectReference]](
-  `quill-cassandra`, `quill-cassandra-lagom`, `quill-cassandra-monix`, `quill-orientdb`, `quill-spark`
 )
 
 lazy val allModules =
@@ -48,12 +47,11 @@ lazy val scala213Modules = baseModules ++ dbModules ++ Seq[sbt.ClasspathDep[sbt.
   `quill-async-mysql`,
   `quill-async-postgres`,
   `quill-finagle-mysql`,
-  `quill-cassandra`,
-  `quill-cassandra-monix`,
-  `quill-orientdb`,
   `quill-jasync`,
   `quill-jasync-postgres`,
-  `quill-jasync-mysql`
+  `quill-jasync-mysql`,
+  `quill-jasync-cats`,
+  `quill-jasync-cats-postgres`
 )
 
 def isScala213 = {
@@ -338,18 +336,6 @@ lazy val `quill-jdbc-monix` =
     .dependsOn(`quill-sql-jvm` % "compile->compile;test->test")
     .dependsOn(`quill-jdbc` % "compile->compile;test->test")
 
-lazy val `quill-spark` =
-  (project in file("quill-spark"))
-    .settings(commonSettings: _*)
-    .settings(mimaSettings: _*)
-    .settings(
-      fork in Test := true,
-      libraryDependencies ++= Seq(
-        "org.apache.spark" %% "spark-sql" % "2.4.4"
-      )
-    )
-    .dependsOn(`quill-sql-jvm` % "compile->compile;test->test")
-
 lazy val `quill-finagle-mysql` =
   (project in file("quill-finagle-mysql"))
     .settings(commonSettings: _*)
@@ -436,6 +422,41 @@ lazy val `quill-jasync-postgres` =
     )
     .dependsOn(`quill-jasync` % "compile->compile;test->test")
 
+lazy val `quill-cats` =
+  (project in file("quill-cats"))
+    .settings(commonSettings: _*)
+    .settings(mimaSettings: _*)
+    .settings(
+      fork in Test := true,
+      libraryDependencies ++= Seq(
+        "org.typelevel"         %% "cats-effect"          % "3.5.0",
+        "co.fs2"                %% "fs2-core"             % "3.7.0"
+      )
+    )
+    .dependsOn(`quill-core-jvm` % "compile->compile;test->test")
+
+lazy val `quill-jasync-cats` =
+  (project in file("quill-jasync-cats"))
+    .settings(commonSettings: _*)
+    .settings(mimaSettings: _*)
+    .settings(
+      fork in Test := true
+    )
+    .dependsOn(`quill-cats` % "compile->compile;test->test")
+    .dependsOn(`quill-jasync` % "compile->compile;test->test")
+
+lazy val `quill-jasync-cats-postgres` =
+  (project in file("quill-jasync-cats-postgres"))
+    .settings(commonSettings: _*)
+    .settings(mimaSettings: _*)
+    .settings(
+      fork in Test := true,
+      libraryDependencies ++= Seq(
+        "com.github.jasync-sql" % "jasync-postgresql" % "2.1.24"
+      )
+    )
+    .dependsOn(`quill-jasync-cats` % "compile->compile;test->test")
+
 lazy val `quill-jasync-mysql` =
   (project in file("quill-jasync-mysql"))
     .settings(commonSettings: _*)
@@ -473,58 +494,6 @@ lazy val `quill-ndbc-postgres` =
       )
     )
     .dependsOn(`quill-ndbc` % "compile->compile;test->test")
-
-lazy val `quill-cassandra` =
-  (project in file("quill-cassandra"))
-    .settings(commonSettings: _*)
-    .settings(mimaSettings: _*)
-    .settings(
-      fork in Test := true,
-      libraryDependencies ++= Seq(
-        "com.datastax.cassandra" %  "cassandra-driver-core" % "3.7.2"
-      )
-    )
-    .dependsOn(`quill-core-jvm` % "compile->compile;test->test")
-
-lazy val `quill-cassandra-monix` =
-  (project in file("quill-cassandra-monix"))
-    .settings(commonSettings: _*)
-    .settings(mimaSettings: _*)
-    .settings(
-      fork in Test := true
-    )
-    .dependsOn(`quill-cassandra` % "compile->compile;test->test")
-    .dependsOn(`quill-monix` % "compile->compile;test->test")
-
-
-lazy val `quill-cassandra-lagom` =
-   (project in file("quill-cassandra-lagom"))
-    .settings(commonSettings: _*)
-    .settings(mimaSettings: _*)
-    .settings(
-      fork in Test := true,
-      libraryDependencies ++= {
-        val lagomVersion = "1.5.5"
-        Seq(
-          "com.lightbend.lagom" %% "lagom-scaladsl-persistence-cassandra" % lagomVersion % Provided,
-          "com.lightbend.lagom" %% "lagom-scaladsl-testkit" % lagomVersion % Test
-        )
-      }
-    )
-    .dependsOn(`quill-cassandra` % "compile->compile;test->test")
-
-
-lazy val `quill-orientdb` =
-  (project in file("quill-orientdb"))
-      .settings(commonSettings: _*)
-      .settings(mimaSettings: _*)
-      .settings(
-        fork in Test := true,
-        libraryDependencies ++= Seq(
-          "com.orientechnologies" % "orientdb-graphdb" % "3.0.32"
-        )
-      )
-      .dependsOn(`quill-sql-jvm` % "compile->compile;test->test")
 
 lazy val `tut-sources` = Seq(
   "CASSANDRA.md",
